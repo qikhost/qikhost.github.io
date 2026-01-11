@@ -87,8 +87,8 @@ h1, h2 {
 }
 
 canvas {
-  margin-top: 2px;
-  border-radius: 2px;
+  margin-top: 12px;
+  border-radius: 4px;
 }
 
 /* ---- SEARCH ---- */
@@ -173,7 +173,10 @@ input {
 
 <div id="toast" class="toast"></div>
 
-<!-- ---------- CONFIG ---------- -->
+<!-- ---------- QR CODE LIBRARY ---------- -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<!-- ---------- CONFIG & SCRIPT ---------- -->
 <script>
 const USERNAME = "qikhost";
 
@@ -187,6 +190,7 @@ let active = "btc";
 let repos = [];
 let lnInvoice = null;
 
+// --------- TOAST ----------
 function showToast(msg) {
   const t = document.getElementById("toast");
   t.innerText = msg;
@@ -194,20 +198,21 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove("show"), 1200);
 }
 
+// --------- QR CODE ----------
 function drawQR(text) {
   const canvas = document.getElementById("qr");
   const ctx = canvas.getContext("2d");
-  const img = new Image();
-  img.onload = () => {
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-  };
-  img.src =
-    "https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=" +
-    encodeURIComponent(text);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  QRCode.toCanvas(canvas, text, { width: 200 }, function (error) {
+    if (error) {
+      console.error(error);
+      showToast("Failed to generate QR code");
+    }
+  });
 }
 
+// --------- LIGHTNING INVOICE ----------
 async function generateInvoice(amountSat = 1000) {
   try {
     const [name, domain] = CRYPTO.ln.split("@");
@@ -229,6 +234,7 @@ async function generateInvoice(amountSat = 1000) {
   }
 }
 
+// --------- CRYPTO TAB ----------
 function setCrypto(type) {
   active = type;
   lnInvoice = null;
@@ -263,9 +269,10 @@ function copyCrypto() {
   showToast("Copied ✔");
 }
 
+// Initialize BTC tab
 setCrypto("btc");
 
-/* ---------- FETCH & SEARCH ---------- */
+// --------- FETCH & SEARCH ----------
 fetch(`https://api.github.com/users/${USERNAME}/repos`)
   .then(r => r.json())
   .then(data => {
@@ -283,7 +290,6 @@ function renderResults() {
       (r.name + (r.description || "")).toLowerCase().includes(q)
     )
     .forEach(r => {
-      // Always link to GitHub Pages version of the repo
       const url = `https://${USERNAME}.github.io/${r.name}/`;
 
       out.innerHTML += `
